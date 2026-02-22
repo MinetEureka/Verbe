@@ -5,32 +5,32 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>動詞学習ゲーム</title>
   <style>
-    body { font-family: sans-serif; text-align: center; margin: 0; }
-    .image-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin: 20px; }
-    .image-button { position: relative; border: 2px solid transparent; cursor: pointer; }
-    .image-button.selected { border: 2px solid red; }
-    .checkmark { position: absolute; top: 5px; right: 5px; font-size: 24px; color: red; display: none; }
-    .image-button.selected .checkmark { display: block; }
-    #overlay { position: fixed; inset: 0; width: 100%; height: 100%; background: rgba(200,200,200,0.8); display: none; justify-content: center; align-items: center; flex-direction: column; z-index:10; }
-    #counter { font-size: 48px; }
-    #input-section { margin-top: 20px; }
-    img { pointer-events: none; user-select: none; }
-    #today-section { margin: 16px 20px; text-align: left; }
-    #today-title { font-weight: 700; margin-bottom: 8px; }
-    /* ▼ 今日の動詞：スマホ1列／タブレット以上2列 */
-    #today-list { display: grid; grid-template-columns: 1fr; gap: 12px; }
-    @media (min-width: 768px){ #today-list { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-    .today-row { display: grid; grid-template-columns: 110px 1fr; gap: 12px; align-items: center; background: #fafafa; border: 1px solid #eee; border-radius: 8px; padding: 8px; }
-    .today-left { display: flex; align-items: center; justify-content: center; }
-    .today-left img { width: 100%; height: auto; max-height: 80px; object-fit: contain; }
-    .pair-line { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-    .tag { font-size: 0.9em; color: #555; }
-    .play { padding: 6px 10px; font-size: 14px; }
-    table { border-collapse: collapse; width: 100%; font-size: 0.9em; }
-    th, td { border-bottom: 1px solid #eee; padding: 6px 4px; text-align: center; }
-    /* 入力・ボタンは16px以上（モバイルの自動ズーム抑止） */
-    input, textarea, select, button { font-size: 16px; }
-    #text-input { width: 80vw; max-width: 420px; }
+   body { font-family: sans-serif; text-align: center; margin: 0; }
+   .image-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin: 20px; }
+   .image-button { position: relative; border: 2px solid transparent; cursor: pointer; }
+   .image-button.selected { border: 2px solid red; }
+   .checkmark { position: absolute; top: 5px; right: 5px; font-size: 24px; color: red; display: none; }
+   .image-button.selected .checkmark { display: block; }
+   #overlay { position: fixed; inset: 0; width: 100%; height: 100%; background: rgba(200,200,200,0.8); display: none; justify-content: center; align-items: center; flex-direction: column; z-index:10; }
+   #counter { font-size: 48px; }
+   #input-section { margin-top: 20px; }
+   img { pointer-events: none; user-select: none; }
+   #today-section { margin: 16px 20px; text-align: left; }
+   #today-title { font-weight: 700; margin-bottom: 8px; }
+   /* ▼ 今日の動詞：スマホ1列／タブレット以上2列 */
+   #today-list { display: grid; grid-template-columns: 1fr; gap: 12px; }
+   @media (min-width: 768px){ #today-list { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+   .today-row { display: grid; grid-template-columns: 110px 1fr; gap: 12px; align-items: center; background: #fafafa; border: 1px solid #eee; border-radius: 8px; padding: 8px; }
+   .today-left { display: flex; align-items: center; justify-content: center; }
+   .today-left img { width: 100%; height: auto; max-height: 80px; object-fit: contain; }
+   .pair-line { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+   .tag { font-size: 0.9em; color: #555; }
+   .play { padding: 6px 10px; font-size: 14px; }
+   table { border-collapse: collapse; width: 100%; font-size: 0.9em; }
+   th, td { border-bottom: 1px solid #eee; padding: 6px 4px; text-align: center; }
+   /* 入力・ボタンは16px以上（モバイルの自動ズーム抑止） */
+   input, textarea, select, button { font-size: 16px; }
+   #text-input { width: 80vw; max-width: 420px; }
   </style>
   <script>
     // 右クリック禁止
@@ -43,39 +43,48 @@
     <img src="image/image-00.png" alt="例示画像" style="width:60%; max-width:300px;" />
     <p style="font-size: 1.2em; margin-top: 10px;">学籍番号を入力してください</p>
   </div>
+
   <div id="start-section">
     学籍番号: <input type="text" id="student-id" maxlength="8" />
     <button onclick="startGame()">スタート</button>
   </div>
+
   <!-- 今日の動詞（練習エリア） -->
   <div id="today-section">
     <div id="today-title">今日の動詞</div>
     <div id="today-list"></div>
   </div>
+
   <div id="game-info" style="display:none">
     <p id="turn-info"></p>
     <p id="score-info"></p>
   </div>
+
   <div class="image-grid" id="image-grid"></div>
   <button id="listen-button" style="display:none" onclick="playAudioSegment(currentAudioId)">もう一度聞く</button>
   <button id="confirm-button" style="display:none" onclick="confirmSelection()">OK</button>
+
   <div id="overlay">
-    <div id="counter">5</div>
+    <div id="counter">10</div>
     <div>je の活用を書いてください</div>
     <div id="input-section">
       <input type="text" id="text-input" value="" onkeydown="if(event.key==='Enter'){submitAnswer();}"/>
       <button onclick="submitAnswer()">OK</button>
     </div>
   </div>
+
   <div id="result" style="display:none"></div>
+
   <!-- 安定再生のために preload/playsinline を付与 -->
   <audio id="audio-player" src="audio.mp3" preload="auto" playsinline></audio>
   <audio id="audio-re-player" src="audioRe.mp3" preload="auto" playsinline></audio>
+
   <!-- 分割 JS -->
   <script src="./js/a1.js"></script>
   <script src="./js/b2.js"></script>
   <script src="./js/r4.js"></script>
   <script src="./js/c3.js"></script>
+
   <script>
     // ===== ズーム制御 =====
     let _origViewportContent = null;
@@ -95,9 +104,14 @@
     const maxVerbe = 10;
     const formsURL = "https://forms.office.com/";
     const segmentMap = {"01a":0,"01b":5, "02a":10,"02b":15, "03a":20,"03b":25,
-                        "04a":30,"04b":35, "05a":40,"05b":45, "06a":50,"06b":55,
-                        "07a":60,"07b":65, "08a":70,"08b":75, "09a":80,"09b":85,
-                        "10a":90,"10b":95};
+      "04a":30,"04b":35, "05a":40,"05b":45, "06a":50,"06b":55,
+      "07a":60,"07b":65, "08a":70,"08b":75, "09a":80,"09b":85,
+      "10a":90,"10b":95, "11a":100,"11b":105,"12a":110,"12b":115,
+      "13a":120,"13b":125,"14a":130,"14b":135,"15a":140,"15b":145,
+      "16a":150,"16b":155,"17a":160,"17b":165,"18a":170,"18b":175,
+      "19a":180,"19b":185,"20a":190,"20b":195};
+
+    // responses は外部JSで提供される
     const responses = window.responses || {};
 
     let turn = 0, score = 0;
@@ -134,13 +148,14 @@
           return line;
         };
         right.appendChild(mk(`oui質問`, playAudioSegment, aId));
-        right.appendChild(mk(`oui答え`, playReviewSegment, aId));
+        right.appendChild(mk(`oui答え`,  playReviewSegment, aId));
         right.appendChild(mk(`non質問`, playAudioSegment, bId));
-        right.appendChild(mk(`non答え`, playReviewSegment, bId));
+        right.appendChild(mk(`non答え`,  playReviewSegment, bId));
         row.appendChild(left); row.appendChild(right);
         container.appendChild(row);
       }
     }
+
     window.addEventListener("DOMContentLoaded", () => {
       renderTodayVerbs();
       const a = document.getElementById('audio-player');
@@ -203,16 +218,25 @@
       document.getElementById("today-section").style.display = "none";
       document.getElementById("game-info").style.display = "block";
       nextTurn();
-      setTimeout(() => playAudioSegment(currentAudioId), 0);
+      // 初回の空ID再生を回避
+      setTimeout(() => { if (currentAudioId) playAudioSegment(currentAudioId); }, 0);
     }
 
     function nextTurn(){
+      // ★ 追加：前ターンの残りを必ずクリア
+      try { clearInterval(countdown); } catch(e) {}
+      selectedImage = "";
+      correctAnswer = "";
+      correctImage  = "";
+      currentAudioId = "";
+
       turn++;
       document.getElementById("turn-info").innerText = `${turn}ターン目`;
       document.getElementById("score-info").innerText = `スコア：${score}/10`;
       document.getElementById("image-grid").innerHTML = "";
       document.getElementById("listen-button").style.display = "none";
       document.getElementById("confirm-button").style.display = "none";
+
       let indices = [];
       while (indices.length < 6) {
         let num = Math.floor(Math.random()*maxVerbe)+1;
@@ -223,6 +247,7 @@
       let suffix = Math.random()<0.5 ? 'a':'b';
       currentAudioId = `${correctImage}${suffix}`;
       correctAnswer = responses[currentAudioId] || "";
+
       indices.forEach(idx => {
         let img = document.createElement('img');
         img.src = `image/image-${idx}.png`; img.style.width = '100%';
@@ -233,7 +258,7 @@
         div.appendChild(img); div.appendChild(check);
         document.getElementById('image-grid').appendChild(div);
       });
-      setTimeout(()=> playAudioSegment(currentAudioId), 1000);
+      setTimeout(()=>{ if (currentAudioId) playAudioSegment(currentAudioId); }, 1000);
       document.getElementById('listen-button').style.display = 'inline';
     }
 
@@ -273,7 +298,13 @@
         isCorrect: (selectedImage===correctImage && input===correctAnswer)
       });
       if (selectedImage===correctImage && input===correctAnswer) score++;
-      if (turn<10) nextTurn(); else endGame();
+
+      // ★ 修正：実測件数で終了を判断（10問目の回答後にのみリザルトへ）
+      if (history.length < 10) {
+        nextTurn();
+      } else {
+        endGame();
+      }
     }
 
     function recomputeScoreFromHistory(){
@@ -300,11 +331,12 @@
         const el = document.getElementById(id);
         if(el){ el.pause(); try{ el.currentTime = 0; }catch(e){} detachLastHandlers(el, id); }
       });
+
       const sidLast4 = parseInt(studentId.slice(-4),10);
       const finalPassword = window.computePassword(sidLast4, score);
       const result = document.getElementById('result');
       result.style.display='block';
-      // ▼ 追加: スコア行を先頭に
+      // ▼ オリジナルの表示構成を維持（スコア→パスワード→コピー→提出）
       result.innerHTML = `
         <p>スコア：${score}/10</p>
         <p>パスワード：${finalPassword}</p>
@@ -312,6 +344,7 @@
         <p>コピーしたパスワードを Forms から提出してください</p>
         <button onclick="window.open('${formsURL}', '_blank')">提出する</button>
       `;
+
       // ▼ 履歴テーブル（右端に正誤列）
       let historyHtml = `
         <table>
@@ -325,8 +358,7 @@
             <th>あなたの答え</th>
             <th>正解</th>
             <th>正誤</th>
-          </tr>
-      `;
+          </tr>`;
       history.forEach(h=>{
         const suffix = h.audioId.slice(-1);
         const chosenQ = `${h.chosenImage}${suffix}`;
@@ -341,12 +373,13 @@
             <td>${h.user}</td>
             <td>${h.correct}</td>
             <td>${h.isCorrect ? '✅' : '❌'}</td>
-          </tr>
-        `;
+          </tr>`;
       });
       historyHtml += `</table>`;
       result.innerHTML += historyHtml;
-      copyPassword(finalPassword);
+
+      // ★ 自動コピーは行わない（ユーザーのボタン操作のみでコピー）
+      // copyPassword(finalPassword);
     }
 
     function copyPassword(pw){ navigator.clipboard.writeText(pw); alert('パスワードをコピーしました。'); }
