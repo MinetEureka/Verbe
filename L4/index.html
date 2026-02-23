@@ -71,7 +71,7 @@
       <button onclick="submitAnswer()">OK</button>
     </div>
     <div id="timeout-section">
-      <p>時間切れです。OKを押して次へ進んでください。</p>
+      <p>入力時間が終了しました。OKを押して次へ進んでください。</p>
       <button onclick="submitAnswer()">OK</button>
     </div>
   </div>
@@ -83,15 +83,38 @@
   <audio id="audio-player" src="audio.mp3" preload="auto" playsinline></audio>
   <audio id="audio-re-player" src="audioRe.mp3" preload="auto" playsinline></audio>
 
+  <!-- 外部JS（パスワード生成など）-->
+  <script src="./js/a1.js"></script>
+  <script src="./js/b2.js"></script>
+  <script src="./js/r4.js"></script>
+  <script src="./js/c3.js"></script>
+
   <script>
     // ===== 設定 =====
     const BUFFER = Object.freeze({
-      DELAY_MS: 150, // Web Audioでは短くてOK
+      DELAY_MS: 150,
       SEEK_SETTLE_MS: 180,
     });
     const COUNTDOWN_LEAD_MS = 2000; // 先行2秒（非表示）
     const COUNTDOWN_VISIBLE_SEC = 5; // 表示カウント（5→1）
     const DURATION_SEC = 5; // 実再生は5秒（segmentMapは10秒刻み）
+
+    // ===== パスワード生成フォールバック =====
+    // 外部JSで window.computePassword が定義されていない場合のみ使用されます。
+    if (typeof window.computePassword !== 'function') {
+      // 佐々木さんの方針：（sid+key)^2 + (score+key)^2 を16進→固定マップで置換…の簡易版
+      // ※ここでは簡易マップに留め、実運用のマップは外部JSで定義してください。
+      (function(){
+        const HEX_MAP = { 'a':'@','b':'!','c':'*','d':'{','e':'}','f':'#' };
+        window.computePassword = function(sidLast4, score){
+          const key = 17; // 簡易キー（外部実装があればそちらが優先）
+          const val = Math.pow(sidLast4 + key, 2) + Math.pow(score + key, 2);
+          let hex = val.toString(16);
+          hex = hex.replace(/[abcdef]/g, ch => HEX_MAP[ch] || ch);
+          return hex;
+        };
+      })();
+    }
 
     // ===== Web Audio: 先読み＆再生 =====
     let audioCtx;
@@ -146,11 +169,9 @@
       setTimeout(async () => {
         await ensureAudioContext();
         if(!(buffers.main && buffers.review)){
-          // 先読みが終わっていない場合は試行的にpreload
           try{ await preloadAudios(); }catch(e){}
         }
         if(!playSegmentWebAudio(which, segmentId, durationSec)){
-          // フォールバック: <audio> を使う（必要最小限）
           const audio = document.getElementById(playerId);
           const startTime = segmentMap[segmentId];
           if(!audio || startTime === undefined) return;
@@ -163,7 +184,6 @@
     // ===== データ =====
     const maxVerbe = 10;
     const formsURL = "https://forms.office.com/";
-    // 10秒刻みのセグメント。実再生は5秒のみ。
     const segmentMap = {
       "01a": 0, "01b": 10,
       "02a": 20, "02b": 30,
@@ -176,7 +196,7 @@
       "09a": 160, "09b": 170,
       "10a": 180, "10b": 190
     };
-    const responses = window.responses || {}; // 音声→正解テキストの対応
+    const responses = window.responses || {};
 
     // ===== 状態 =====
     let turn = 0, score = 0;
@@ -223,9 +243,7 @@
 
     window.addEventListener('DOMContentLoaded', ()=>{
       renderTodayVerbs();
-      // 静かに先読み（音は鳴らない）
       preloadAudios().catch(()=>{});
-      // <audio> も温め（フォールバック用）
       const a=document.getElementById('audio-player'); const ar=document.getElementById('audio-re-player');
       if(a) a.load(); if(ar) ar.load();
     });
@@ -240,7 +258,6 @@
       document.getElementById('game-info').style.display='block';
 
       nextTurn();
-      // ★ 1問目はスタートのクリック（ユーザー操作）に紐付けて再生
       if(currentAudioId){ playAudioSegment(currentAudioId); }
     }
 
@@ -254,7 +271,6 @@
       document.getElementById('listen-button').style.display='none';
       document.getElementById('confirm-button').style.display='none';
 
-      // 6枚ランダム
       let indices=[];
       while(indices.length<6){
         let num=Math.floor(Math.random()*maxVerbe)+1;
@@ -275,7 +291,6 @@
         document.getElementById('image-grid').appendChild(div);
       });
 
-      // 自動再生はしない（ユーザー操作のタイミングでのみ再生）
       document.getElementById('listen-button').style.display='inline';
       document.getElementById('image-grid').style.display='grid';
     }
@@ -300,13 +315,11 @@
       const inputSec = document.getElementById('input-section');
       const timeoutSec = document.getElementById('timeout-section');
 
-      // 入力欄を初期表示、タイムアウトUIは非表示
       inputEl.value='';
       inputSec.style.display='block';
       timeoutSec.style.display='none';
       inputEl.focus();
 
-      // 先行2秒は非表示
       counterEl.style.visibility = 'hidden';
       setTimeout(()=>{
         counterEl.style.visibility = 'visible';
@@ -316,7 +329,6 @@
           c--; counterEl.innerText = c;
           if(c <= 0){
             clearInterval(countdown);
-            // ★ 時間切れ：カウンター＆入力欄を消し、OKボタンのみ表示
             inputSec.style.display='none';
             timeoutSec.style.display='block';
           }
@@ -337,7 +349,6 @@
       if(selectedImage===correctImage && input===correctAnswer) score++;
 
       if(history.length < 10){
-        // ★ 次の問題を作って、今回のOK/Enterに紐づけて再生
         nextTurn();
         if(currentAudioId){ playAudioSegment(currentAudioId); }
       } else {
@@ -356,21 +367,22 @@
       document.getElementById('listen-button').style.display='none';
       document.getElementById('confirm-button').style.display='none';
       const grid=document.getElementById('image-grid'); if(grid){ grid.innerHTML=''; grid.style.display='none'; }
+      // ★ 重複表示を避けるため、ゲーム情報を非表示にする
+      const gi=document.getElementById('game-info'); if(gi){ gi.style.display='none'; }
       document.getElementById('overlay').style.display='none'; unlockZoom();
 
       const sidLast4 = parseInt(studentId.slice(-4), 10);
-      const finalPassword = window.computePassword ? window.computePassword(sidLast4, score) : '';
+      const finalPassword = (typeof window.computePassword === 'function') ? window.computePassword(sidLast4, score) : '';
       const result=document.getElementById('result');
       result.style.display='block';
       result.innerHTML = `
         <p>スコア：${score}/10</p>
-        <p>パスワード：${finalPassword}</p>
-        <button onclick="copyPassword('${finalPassword}')">コピー</button>
+        <p>パスワード：${finalPassword || '(生成エラー)'}</p>
+        <button onclick="copyPassword('${finalPassword}')" ${finalPassword ? '' : 'disabled'}>コピー</button>
         <p>コピーしたパスワードを Forms から提出してください</p>
         <button onclick="window.open('${formsURL}', '_blank')">提出する</button>
       `;
 
-      // 履歴表
       let historyHtml = `<table><tr><th>問題</th><th>動詞</th><th>選んだ動詞</th><th>質問</th><th>選んだ動詞の音声</th><th>正解音声</th><th>あなたの答え</th><th>正解</th><th>正誤</th></tr>`;
       history.forEach(h=>{
         const suffix = h.audioId.slice(-1);
@@ -391,11 +403,10 @@
       result.innerHTML += historyHtml;
     }
 
-    function copyPassword(pw){ navigator.clipboard.writeText(pw); alert('パスワードをコピーしました。'); }
+    function copyPassword(pw){ if(!pw) return; navigator.clipboard.writeText(pw); alert('パスワードをコピーしました。'); }
 
-    // ===== ユーザー操作での再生API =====
     function playAudioSegment(segmentId, reset=false){
-      currentAudioId = segmentId; // 再生対象を記録
+      currentAudioId = segmentId;
       playAfterDelay('audio-player', segmentId, DURATION_SEC, { reset }, BUFFER.DELAY_MS);
     }
     function __replayCurrent(){
