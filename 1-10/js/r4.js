@@ -1,4 +1,3 @@
-\
 /* responses */
 window.responses = {
   "01":"10",//1
