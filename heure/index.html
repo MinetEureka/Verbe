@@ -1,290 +1,45 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Quelle heure est-ilwindows</title>
-    <style>
-        body { font-family: sans-serif; text-align: center; }
-        .image-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 20px; }
-        .image-button { position: relative; border: 2px solid transparent; }
-        .image-button.selected { border: 2px solid red; }
-        .checkmark { position: absolute; top: 5px; right: 5px; font-size: 24px; color: red; display: none; }
-        .image-button.selected .checkmark { display: block; }
-        #overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(200,200,200,0.8); display: none; justify-content: center; align-items: center; flex-direction: column; }
-        #counter { font-size: 48px; }
-        #input-section { margin-top: 20px; }
-        img { pointer-events: none; user-select: none; }
-    </style>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>時刻の聞き取りゲーム</title>
+<link rel="stylesheet" href="game.css">
+<script>
+  document.addEventListener('contextmenu', e => e.preventDefault());
+</script>
 
-    <script>
-    // 右クリック禁止（画像保存などの防止）
-    document.addEventListener('contextmenu', event => event.preventDefault());
-    </script>
-
-    <!-- 音声ファイルの再生用 -->
-    <audio id="audio-player" src="audio.mp3"></audio>
-    <script>
-    // 指定したIDの音声区間を再生する関数
-    function playAudioSegment(segmentId) {
-    const segmentMap = {
-        "01a": 0, "01b": 5,
-        "02a": 10, "02b": 15,
-        "03a": 20, "03b": 25,
-        "04a": 30, "04b": 35,
-        "05a": 40, "05b": 45,
-        "06a": 50, "06b": 55,
-        "07a": 60, "07b": 65,
-        "08a": 70, "08b": 75,
-        "09a": 80, "09b": 85,
-        "10a": 90, "10b": 95,
-        "11a": 100, "11b": 105,
-        "12a": 110, "12b": 115,
-        "13a": 120, "13b": 125,
-        "14a": 130, "14b": 135,
-        "15a": 140, "15b": 145
-    };
-
-    const startTime = segmentMap[segmentId];
-    
-    if (startTime === undefined) return;
-
-    const audio = document.getElementById("audio-player");
-
-    audio.pause();
-    audio.addEventListener('canplay', () => {
-    audio.play().then(() => {
-        setTimeout(() => audio.pause(), 5000);
-    });
-});
-audio.currentTime = startTime;
-audio.load();
-    audio.currentTime = startTime;
-    audio.load(); 
-
-    // 1.5秒待ってから再生開始（currentTimeの反映を吸収）
-    setTimeout(() => {
-        audio.play().then(() => {
-            // 再生開始から5秒後に停止（正確な区間再生）
-            setTimeout(() => {
-                audio.pause();
-            }, 5000);
-        }).catch(err => {
-            console.error("再生エラー:", err);
-        });
-    }, 1000); // ← ここで待機時間を調整（1000〜2000msが目安）
-}
-
-    </script>
 </head>
 <body>
-    <h1>Quelle heure est-il ?</h1>
-
-    <!-- ゲーム開始前の説明画像と案内 -->
-    <div id="intro-image" style="margin-top: 20px;">
-        <img src="verbe-00.png" alt="例示画像" style="width:60%; max-width:300px;">
-        <p style="font-size: 1.2em; margin-top: 10px;">学籍番号の最後の4桁を入力してください</p>
-    </div>
-    <!-- 学籍番号入力欄とスタートボタン -->
-    <div id="start-section">
-        学籍番号: <input type="text" id="student-id" maxlength="8">
-        <button onclick="startGame()">スタート</button>
-    </div>
-    <!-- ゲーム中のターン・スコア表示 -->
-    <div id="game-info" style="display:none;">
-        <p id="turn-info"></p>
-        <p id="score-info"></p>
-    </div>
-    <!-- 画像選択肢のグリッド -->
-    <div class="image-grid" id="image-grid"></div>
-    <!-- 音声再生ボタン -->
-    <button id="listen-button" style="display:none;" onclick="playAudioSegment(currentAudioId)">もう一度聞く</button>
-    <!-- 画像選択確定ボタン -->
-    <button id="confirm-button" style="display:none;" onclick="confirmSelection()">OK</button>
-
-    <!-- 結果表示 -->
-    <div id="result" style="display:none;"></div>
-
-<script>
-// -------------------- 定数・変数定義 --------------------
-
-// 動詞（画像・音声）の最大数
-const maxVerbe = 15;
-// パスワード計算用の定数
-const scoreKey = 23;
-// 提出先フォームのURL
-const formsURL = "https://forms.office.com/";
-
-// 現在のターン数（1～10）
-let turn = 0;
-// 現在のスコア（正解数）
-let score = 0;
-// 選択された画像の番号（例: "03"）
-let selectedImage = "";
-// 正解の画像番号（例: "03"）
-let correctImage = "";
-// カウントダウン用タイマーID
-let countdown;
-// 入力された学籍番号
-let studentId = "";
-// 現在再生中の音声ID（例: "03a"）
-let currentAudioId = "";
-// mapping
-const hexReplaceMap = {
-    '0': '{', '1': '}', '2': '*', '3': '@', '4': '!',
-    '5': 'L', '6': 'q', '7': 'X', '8': 'Y', '9': 'k',
-    'A': 'K', 'B': 'I', 'C': 'i', 'D': 'j', 'E': '?', 'F': 'J'
-};
-
-
-
-// -------------------- ゲーム開始処理 --------------------
-
-// ゲーム開始時に呼ばれる関数
-function startGame() {
-    studentId = document.getElementById("student-id").value;
-    // 学籍番号の下4桁が入力されているかチェック
-    if (studentId.length < 4) {
-        alert("学籍番号の下4桁を入力してください。");
-        return;
-    }
-    // 入力欄や説明画像を非表示にし、ゲーム情報を表示
-    document.getElementById("start-section").style.display = "none";
-    document.getElementById("intro-image").style.display = "none";
-    document.getElementById("game-info").style.display = "block";
-    nextTurn();
-}
-
-// -------------------- 1ターン分の処理 --------------------
-
-// 1ターン分の処理を行う関数
-function nextTurn() {
-    turn++;
-    // ターン数・スコア表示を更新
-    document.getElementById("turn-info").innerText = `${turn}ターン目`;
-    document.getElementById("score-info").innerText = `スコア：${score}/10`;
-
-    // 画像グリッドとボタンを初期化
-    document.getElementById("image-grid").innerHTML = "";
-    document.getElementById("listen-button").style.display = "none";
-    document.getElementById("confirm-button").style.display = "none";
-
-    // 3つの動詞番号をランダムに選ぶ（重複なし）
-    let baseIndices = [];
-    while (baseIndices.length < 3) {
-        let num = Math.floor(Math.random() * maxVerbe) + 1;
-        let str = num.toString().padStart(2, '0'); // ← 2桁ゼロ埋めで "01", "11" などに統一
-        if (!baseIndices.includes(str)) baseIndices.push(str);
-    }
-
-    // 各動詞に対して a/b 両方の画像IDを作成（計6枚）
-    let imageIds = [];
-    baseIndices.forEach(base => {
-        imageIds.push(`${base}a`);
-        imageIds.push(`${base}b`);
-    });
-
-    // 正解画像IDをランダムに選択（例: "03a"）
-    correctImage = imageIds[Math.floor(Math.random() * imageIds.length)];
-    currentAudioId = correctImage;
-
-    // 画像ボタンを生成して表示
-    imageIds.forEach(id => {
-        let img = document.createElement("img");
-        img.src = `verbe-${id}.png`;
-        img.style.width = "100%";
-
-        let div = document.createElement("div");
-        div.className = "image-button";
-        div.onclick = () => {
-            if (selectedImage === id) {
-                confirmSelection();
-            } else {
-                selectImage(id);
-            }
-        };
-
-        let check = document.createElement("div");
-        check.className = "checkmark";
-        check.innerText = "✓";
-        div.appendChild(img);
-        div.appendChild(check);
-        document.getElementById("image-grid").appendChild(div);
-    });
-
-    // 1秒後に音声を再生
-    setTimeout(() => playAudioSegment(currentAudioId), 1000);
-    document.getElementById("listen-button").style.display = "inline";
-}
-// -------------------- 画像選択時の処理 --------------------
-
-// 画像が選択されたときの処理
-function selectImage(id) {
-    selectedImage = id; // 選択された画像IDを保存（例: "03a"） // a/b区別のために変更
-
-    // --- 改修ポイント①：選択状態の見た目を更新 ---
-    document.querySelectorAll(".image-button").forEach(div => div.classList.remove("selected"));
-
-    // --- 改修ポイント②：該当画像IDを持つ要素を選択 ---
-    const index = Array.from(document.querySelectorAll(".image-button img"))
-        .findIndex(img => img.src.includes(`verbe-${id}.png`)); // a/b付きファイル名に対応 // ファイル名変更のために変更
-
-    if (index !== -1) {
-        document.querySelectorAll(".image-button")[index].classList.add("selected"); // 選択枠を表示
-    }
-
-    document.getElementById("confirm-button").style.display = "inline"; // OKボタンを表示
-}
-
-function confirmSelection() {
-    // --- 改修ポイント①：画像のクリックを無効化 ---
-    document.querySelectorAll(".image-button").forEach(div => div.onclick = null); // 選択後の誤操作防止のために維持
-
-    // --- 改修ポイント②：選択と正解の照合（a/b付きIDで判定） ---
-    if (selectedImage === currentAudioId) { // 選択画像IDと音声IDが一致すれば正解 // 入力欄廃止のために変更
-        score++; // スコア加算
-    }
-
-    // --- 改修ポイント③：次ターンへ進むか、終了処理へ ---
-    if (turn < 10) {
-        nextTurn(); // 次のターンへ
-    } else {
-        endGame(); // ゲーム終了処理へ
-    }
-}
-
-
-
-// -------------------- ゲーム終了・パスワード生成 --------------------
-
-// ゲーム終了時の処理（パスワード生成と表示）
-function endGame() {
-    let key = parseInt(studentId.slice(-4));
-    let passwordValue = ((key + scoreKey) ** 2) + ((score + scoreKey) ** 2);
-    let hexPassword = passwordValue.toString(16).toUpperCase();
-    let finalPassword = hexPassword.split('').map(c => hexReplaceMap[c] || c).join('');
-
-    document.getElementById("result").style.display = "block";
-    document.getElementById("image-grid").style.display = 'none';
-    document.getElementById("game-info").style.display = "none";
-    document.getElementById("listen-button").style.display = "none";
-    document.getElementById("confirm-button").style.display = "none";
-
-    document.getElementById("result").innerHTML = `
-        <p>スコア：${score} / 10</p>
-        <p>パスワード：${finalPassword}</p>
-        <p>コピーしたパスワードをFormsから提出してください</p>
-        <button onclick="copyPassword('${finalPassword}')">コピーしなおす</button>
-    `;
-
-    copyPassword(finalPassword);
-}
-
-// パスワードをクリップボードにコピー
-function copyPassword(pw) {
-    navigator.clipboard.writeText(pw);
-    alert("パスワードをコピーしました。");
-}
-</script>
+<h1>時刻の聞き取りゲーム</h1>
+<div id="intro-image" style="margin-top: 20px;">
+  <img src="image/image-00.png" alt="例示画像" style="width:60%; max-width:300px;">
+  <p style="font-size: 1.2em; margin-top: 10px;">学籍番号の下4桁を入力してください</p>
+</div>
+<div id="start-section">
+  学籍番号（下4桁）: <input type="text" id="student-id" maxlength="4" inputmode="numeric" pattern="[0-9]{4}" autocomplete="off" />
+  <button id="start-btn" onclick="startGame()">スタート</button>
+</div>
+<div id="today-section">
+  <div id="today-title">練習しよう</div>
+  <div id="today-list"></div>
+</div>
+<div id="game-info" style="display:none;">
+  <p id="turn-info"></p>
+  <p id="score-info"></p>
+</div>
+<div class="image-grid" id="image-grid"></div>
+<button id="listen-button" style="display:none;" onclick="playAudioSegment(currentAudioId)">もう一度聞く</button>
+<div id="result" style="display:none;"></div>
+<!-- Web Audioが利用できない場合の代替再生要素 -->
+<audio id="audio-player" preload="metadata"></audio>
+<div id="toast" role="status" hidden></div>
+<script src="js/config.js"></script>
+<script src="js/reponses.js"></script>
+<script src="js/scorekey.js"></script>
+<script src="js/code.js"></script>
+<script src="js/calc.js"></script>
+<script src="js/audio.js"></script>
+<script src="js/game.js"></script>
 </body>
 </html>
