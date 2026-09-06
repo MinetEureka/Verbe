@@ -18,15 +18,15 @@ function playAudioSegment(id) {
   });
 }
 function validateSetup() {
-  if (!Number.isInteger(maxImage) || maxImage<1 || maxImage>50) throw Error('maxCardsは1〜50の整数にしてください。');
+  if (!Number.isInteger(maxImage) || maxImage<1 || maxImage>100) throw Error('maxCardsは1〜100の整数にしてください。');
   if (!Number.isInteger(config.choices) || config.choices<1 || !Number.isInteger(config.rounds) || config.rounds<1) throw Error('選択肢数・問題数を確認してください。');
   if (![config.segmentSpacing,config.segmentOffset,config.segmentSeconds].every(Number.isFinite) || config.segmentSpacing<=0 || config.segmentOffset<0 || config.segmentSeconds<=0 || config.segmentOffset+config.segmentSeconds>config.segmentSpacing) throw Error('音声区間の設定を確認してください。');
   if (!window.responses || typeof window.responses!=='object') throw Error('js/reponses.jsを読み込めません。');
   for(let n=1;n<=maxImage;n++) {
     const id=String(n).padStart(2,'0'); const dummy=window.responses[id];
     if (dummy == null || dummy === '') continue;
-    if (!/^\d{1,2}$/.test(String(dummy)) || +dummy<1 || +dummy>maxImage) throw Error(`${id}のダミー解答がカード範囲外です。reponses.jsを確認してください。`);
-    if (+dummy!==n && config.choices<2) throw Error('ダミー解答を表示するため選択肢数を2以上にしてください。');
+    if (!/^\d{1,3}$/.test(String(dummy)) || +dummy<1 || +dummy>100) throw Error(`${id}のダミー解答は1〜100の番号にしてください。reponses.jsを確認してください。`);
+    if (+dummy<=maxImage && +dummy!==n && config.choices<2) throw Error('ダミー解答を表示するため選択肢数を2以上にしてください。');
   }
   if (typeof window.computePassword!=='function') throw Error('提出コードの計算ファイルを読み込めません。');
   window.computePassword('0000',0);
@@ -66,16 +66,17 @@ function startGame(){
   playAudioSegment(currentAudioId);
 }
 
-// 正解は 01-26 から均等ランダム
+// 正解は設定された全種類から均等ランダム
 function pickCorrectId(){
   return String(Math.floor(Math.random()*maxImage)+1).padStart(2,'0');
 }
 
-// 選択肢: 正解 + reponsesの responses で指定されたダミー（非対称OK） + ランダムで合計6
+// 選択肢: 正解 + reponses.jsで指定されたペア + ランダムで設定枚数まで補充
 function pickChoices(correct){
   const set=new Set([correct]);
   const dummy=window.responses[correct];
-  if(dummy != null && dummy !== '') set.add(String(dummy).padStart(2,'0'));
+  // 縮小版では上限を超えたダミーを除き、範囲内の候補で補充します。
+  if(dummy != null && dummy !== '' && +dummy>=1 && +dummy<=maxImage) set.add(String(dummy).padStart(2,'0'));
   const pool=Array.from({length:maxImage},(_,i)=>String(i+1).padStart(2,'0')).filter(id=>!set.has(id));
   for(let i=pool.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [pool[i],pool[j]]=[pool[j],pool[i]]; }
   const target=Math.min(config.choices,maxImage);
@@ -177,6 +178,19 @@ function endGame(){
   });
   historyHtml += `</table>`; resultDiv.insertAdjacentHTML('beforeend','<div class="history-scroll">'+historyHtml+'</div>');
   resultDiv.scrollIntoView({behavior:'smooth'});
+  if (finalPassword) {
+     try {
+       navigator.clipboard.writeText(finalPassword)
+        .then(() => {
+            showToast('パスワードを自動コピーしました。');
+         })
+          .catch(() => {
+        // 自動コピーが拒否された場合は手動ボタンを使います。
+       });
+     } catch (_) {
+    // Clipboard APIが使えない場合も結果表示を続けます。
+    }
+　}
 }
 async function copyPassword(){
   const button=document.getElementById('copy-btn'); if(!button || button.disabled) return;

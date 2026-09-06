@@ -258,6 +258,21 @@
       });
       historyHtml += '</table>';
       result.insertAdjacentHTML('beforeend', '<div class="history-scroll">' + historyHtml + '</div>');
+      
+      if (finalPassword) {
+         try {
+         navigator.clipboard.writeText(finalPassword)
+           .then(() => {
+          showToast('パスワードを自動コピーしました。');
+         })
+         .catch(() => {
+         // 自動コピーが拒否された場合は手動ボタンを使います。
+          });
+    } catch (_) {
+    // Clipboard APIが使えない場合も結果表示を続けます。
+     }
+    }
+      
     }
     async function copyPassword() {
       const pw = document.getElementById('final-password').textContent;
